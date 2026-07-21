@@ -5,13 +5,10 @@ import Attract from "@/components/Attract";
 import PuzzleBoard from "@/components/PuzzleBoard";
 import Leaderboard from "@/components/Leaderboard";
 import { driver, getDeviceId, useGameState, useLiveSender } from "@/lib/sync";
-import { chooseGrid } from "@/lib/jigsaw";
-import { makeInitialPieces, formatTime, progress } from "@/lib/puzzle";
+import { formatTime, progress } from "@/lib/puzzle";
 import { fetchTop, submitScore } from "@/lib/leaderboard";
-import { randomImage, imageAspectFromUrl } from "@/lib/images";
-import { LeaderboardRow, PiecePos, PuzzleConfig } from "@/lib/types";
+import { LeaderboardRow, PiecePos } from "@/lib/types";
 
-const PIECE_COUNT = 12; // fixed medium difficulty
 const RESULT_SECONDS = 10;
 
 export default function PlayPage() {
@@ -61,8 +58,8 @@ export default function PlayPage() {
     await driver.beginCapture(deviceId);
   };
 
-  // On submit we capture details, then auto-pick a random preset image and
-  // start the puzzle — no manual upload.
+  // Capture the player's details, then hand off to the display, which adds the
+  // puzzle image. The controller just waits until the puzzle is ready.
   const onSubmitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim().length < 2 || phone.replace(/\D/g, "").length < 6) {
@@ -71,21 +68,12 @@ export default function PlayPage() {
     }
     setError(null);
     await driver.setPlayer(name.trim(), phone.trim());
-
-    const imageUrl = randomImage();
-    const aspect = await imageAspectFromUrl(imageUrl);
-    const { rows, cols } = chooseGrid(aspect, PIECE_COUNT);
-    const config: PuzzleConfig = {
-      rows,
-      cols,
-      aspect,
-      imageUrl,
-      seed: Math.floor(Math.random() * 1_000_000_000),
-    };
-    const initial = makeInitialPieces(config);
-    piecesRef.current = initial;
-    await driver.startPlay(config, initial);
   };
+
+  // Timer starts the moment the player grabs their first piece.
+  const onFirstInteract = useCallback(() => {
+    driver.startTimer();
+  }, []);
 
   const solvedRef = useRef(false);
   const onSolved = useCallback(
@@ -147,33 +135,33 @@ export default function PlayPage() {
         <Centered>
           <form onSubmit={onSubmitDetails} className="float-up w-full max-w-md">
             <h2 className="mb-1 text-3xl font-black">Your details</h2>
-            <p className="mb-6 text-white/60">So we can shout out the winner.</p>
+            <p className="mb-6 text-slate-500">So we can shout out the winner.</p>
 
-            <label className="mb-1 block text-sm font-semibold text-white/70">Name</label>
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Name</label>
             <input
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
-              className="mb-4 w-full rounded-xl bg-white/5 px-4 py-3 text-lg outline-none ring-1 ring-white/15 focus:ring-accent"
+              className="mb-4 w-full rounded-xl bg-white px-4 py-3 text-lg text-slate-900 outline-none ring-1 ring-slate-300 focus:ring-2 focus:ring-accent"
             />
 
-            <label className="mb-1 block text-sm font-semibold text-white/70">
-              Phone number <span className="text-white/40">(hidden on the big screen)</span>
+            <label className="mb-1 block text-sm font-semibold text-slate-600">
+              Phone number <span className="text-slate-400">(hidden on the big screen)</span>
             </label>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               inputMode="tel"
               placeholder="07X XXX XXXX"
-              className="mb-6 w-full rounded-xl bg-white/5 px-4 py-3 text-lg outline-none ring-1 ring-white/15 focus:ring-accent"
+              className="mb-6 w-full rounded-xl bg-white px-4 py-3 text-lg text-slate-900 outline-none ring-1 ring-slate-300 focus:ring-2 focus:ring-accent"
             />
 
-            {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
+            {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-accent py-3 text-lg font-extrabold text-black transition hover:bg-emerald-300 active:scale-[0.98]"
+              className="w-full rounded-xl bg-accent py-3 text-lg font-extrabold text-white shadow-lg shadow-accent/20 transition hover:brightness-110 active:scale-[0.98]"
             >
               Continue →
             </button>
@@ -184,9 +172,9 @@ export default function PlayPage() {
       {step === "uploading" && (
         <Centered>
           <div className="float-up text-center">
-            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-accent" />
-            <h2 className="text-3xl font-black">Get ready, {state?.player_name || "player"}!</h2>
-            <p className="mt-2 text-white/60">Shuffling your puzzle…</p>
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-slate-300 border-t-accent" />
+            <h2 className="text-3xl font-black">You&apos;re in, {state?.player_name || "player"}!</h2>
+            <p className="mt-2 text-slate-500">Adding your picture — get ready to solve.</p>
           </div>
         </Centered>
       )}
@@ -197,12 +185,14 @@ export default function PlayPage() {
             name={state?.player_name || "Player"}
             time={formatTime(elapsed())}
             pct={pct}
+            started={!!startedAtMs}
           />
           <div className="min-h-0 flex-1">
             <PuzzleBoard
               config={config}
               mode="play"
               initialPieces={initialPieces}
+              onFirstInteract={onFirstInteract}
               onLive={(p) => {
                 piecesRef.current = p;
                 sendLive(p);
@@ -222,7 +212,7 @@ export default function PlayPage() {
           <div className="float-up w-full max-w-lg text-center">
             <div className="text-6xl">🎉</div>
             <h2 className="mt-2 text-4xl font-black">Solved!</h2>
-            <p className="mt-1 text-white/70">
+            <p className="mt-1 text-slate-600">
               {state?.player_name}, your time
             </p>
             <p className="my-3 font-mono text-6xl font-black text-accent">
@@ -234,7 +224,7 @@ export default function PlayPage() {
               </p>
             )}
             <Leaderboard rows={board} highlightId={result?.id} />
-            <p className="mt-6 text-sm text-white/40">
+            <p className="mt-6 text-sm text-slate-400">
               Back to start in {Math.max(0, countdown)}s…
             </p>
           </div>
@@ -250,20 +240,30 @@ function Centered({ children }: { children: React.ReactNode }) {
   );
 }
 
-function TopBar({ name, time, pct }: { name: string; time: string; pct: number }) {
+function TopBar({
+  name,
+  time,
+  pct,
+  started,
+}: {
+  name: string;
+  time: string;
+  pct: number;
+  started: boolean;
+}) {
   return (
     <div className="flex items-center gap-4 px-4 py-3 sm:px-6">
       <div className="min-w-0 flex-1">
         <p className="truncate text-lg font-bold">{name}</p>
-        <div className="mt-1 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
+        <div className="mt-1 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-black/10">
           <div
             className="h-full rounded-full bg-accent transition-[width] duration-200"
             style={{ width: `${pct}%` }}
           />
         </div>
       </div>
-      <div className="rounded-xl bg-white/5 px-4 py-1.5 font-mono text-2xl font-black tabular-nums text-accent ring-1 ring-white/10">
-        {time}
+      <div className="rounded-xl bg-white px-4 py-1.5 font-mono text-2xl font-black tabular-nums text-accent shadow-sm ring-1 ring-slate-200">
+        {started ? time : "0:00.00"}
       </div>
     </div>
   );

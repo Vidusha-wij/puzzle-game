@@ -53,6 +53,8 @@ export interface PuzzleBoardProps {
   onLive?: (pieces: PiecePos[]) => void;
   onCommit?: (pieces: PiecePos[]) => void;
   onSolved?: (pieces: PiecePos[]) => void;
+  /** Fired once, when the player grabs the very first piece (starts the clock). */
+  onFirstInteract?: () => void;
 }
 
 export default function PuzzleBoard({
@@ -63,6 +65,7 @@ export default function PuzzleBoard({
   onLive,
   onCommit,
   onSolved,
+  onFirstInteract,
 }: PuzzleBoardProps) {
   const { rows, cols, imageUrl, aspect } = config;
   const edges: JigsawEdges = useMemo(
@@ -110,10 +113,12 @@ export default function PuzzleBoard({
   } | null>(null);
   const [dragId, setDragId] = useState<number | null>(null);
   const liveRaf = useRef<number | null>(null);
+  const interactedRef = useRef(false);
 
   // Reset when a new round starts (config seed / initial scatter changes).
   useEffect(() => {
     if (mode === "play" && initialPieces) setLocalPieces(initialPieces);
+    interactedRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.seed, mode]);
 
@@ -157,8 +162,12 @@ export default function PuzzleBoard({
       const n = pointerToNorm(e.clientX, e.clientY);
       draggingRef.current = { id: p.id, offX: n.x - p.x, offY: n.y - p.y };
       setDragId(p.id);
+      if (!interactedRef.current) {
+        interactedRef.current = true;
+        onFirstInteract?.();
+      }
     },
-    [mode, layout, pointerToNorm]
+    [mode, layout, pointerToNorm, onFirstInteract]
   );
 
   useEffect(() => {
@@ -225,21 +234,21 @@ export default function PuzzleBoard({
         <>
           {/* Board frame / ghost of the finished image */}
           <div
-            className="absolute rounded-md ring-1 ring-white/15"
+            className="absolute rounded-md ring-1 ring-black/10"
             style={{
               left: layout.originX,
               top: layout.originY,
               width: layout.boardW,
               height: layout.boardH,
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
+              boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.05)",
               background:
-                "repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 10px, rgba(255,255,255,0.04) 10px 20px)",
+                "repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0 10px, rgba(0,0,0,0.04) 10px 20px)",
             }}
           >
             <img
               src={imageUrl}
               alt=""
-              className="pointer-events-none h-full w-full rounded-md object-fill opacity-[0.08]"
+              className="pointer-events-none h-full w-full rounded-md object-fill opacity-[0.12]"
             />
             {/* cell grid guide */}
             <svg
@@ -248,10 +257,10 @@ export default function PuzzleBoard({
               preserveAspectRatio="none"
             >
               {Array.from({ length: cols - 1 }, (_, i) => (
-                <line key={`v${i}`} x1={i + 1} y1={0} x2={i + 1} y2={rows} stroke="rgba(255,255,255,0.06)" strokeWidth={0.01} />
+                <line key={`v${i}`} x1={i + 1} y1={0} x2={i + 1} y2={rows} stroke="rgba(0,0,0,0.08)" strokeWidth={0.01} />
               ))}
               {Array.from({ length: rows - 1 }, (_, i) => (
-                <line key={`h${i}`} x1={0} y1={i + 1} x2={cols} y2={i + 1} stroke="rgba(255,255,255,0.06)" strokeWidth={0.01} />
+                <line key={`h${i}`} x1={0} y1={i + 1} x2={cols} y2={i + 1} stroke="rgba(0,0,0,0.08)" strokeWidth={0.01} />
               ))}
             </svg>
           </div>
@@ -359,8 +368,8 @@ function Piece({
         <path
           d={d}
           fill="none"
-          stroke={p.placed ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.55)"}
-          strokeWidth={p.placed ? 0.006 : 0.012}
+          stroke={p.placed ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.75)"}
+          strokeWidth={p.placed ? 0.006 : 0.014}
           vectorEffect="non-scaling-stroke"
         />
       </svg>

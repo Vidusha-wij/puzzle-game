@@ -25,3 +25,20 @@ export function imageAspectFromUrl(url: string): Promise<number> {
     img.src = url;
   });
 }
+
+/** Measure an image File's aspect (w/h). Never rejects. */
+export function imageAspectFromFile(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img.naturalWidth / Math.max(1, img.naturalHeight));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(1);
+    };
+    img.src = url;
+  });
+}

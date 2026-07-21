@@ -102,14 +102,21 @@ export const driver = {
     await patch({ player_name: name, player_phone: phone, status: "uploading" });
   },
 
+  /** Called by the display once the puzzle image is uploaded. The timer does
+   * NOT start here — it starts when the player touches the first piece. */
   async startPlay(config: PuzzleConfig, initialPieces: PiecePos[]) {
     await patch({
       photo_url: config.imageUrl,
       puzzle_config: config,
       pieces_placed: initialPieces,
       status: "playing",
-      started_at: new Date().toISOString(),
+      started_at: null,
     });
+  },
+
+  /** Start the clock — fired the moment the player grabs the first piece. */
+  async startTimer() {
+    await patch({ started_at: new Date().toISOString() });
   },
 
   /** Persist an occasional snapshot (on snap events) for durability. */

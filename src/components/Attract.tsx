@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { randomImage } from "@/lib/images";
 
 /**
@@ -16,13 +16,18 @@ export default function Attract({
   onPlay?: () => void;
   imageUrl?: string;
 }) {
-  const [img] = useState(() => imageUrl ?? randomImage());
+  // Pick the random image on the client only, so SSR and hydration agree.
+  const [img, setImg] = useState<string | null>(imageUrl ?? null);
   const [imgOk, setImgOk] = useState(true);
   const isController = !!onPlay;
 
+  useEffect(() => {
+    if (!imageUrl) setImg(randomImage());
+  }, [imageUrl]);
+
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
-      {imgOk ? (
+      {imgOk && img && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={img}
@@ -30,7 +35,8 @@ export default function Attract({
           className="absolute inset-0 h-full w-full object-cover"
           onError={() => setImgOk(false)}
         />
-      ) : (
+      )}
+      {!imgOk && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center opacity-80">
             <div className="mx-auto mb-6 grid h-28 w-28 place-items-center rounded-3xl bg-accent/15 text-6xl">

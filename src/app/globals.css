@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a1410;
-  --foreground: #eaf4ee;
-  --accent: #34d399; /* emerald 400 */
-  --accent-deep: #059669; /* emerald 600 */
+  --background: #f3f6f4;
+  --foreground: #0f1f1a;
+  --accent: #059669; /* emerald 600 */
+  --accent-deep: #047857; /* emerald 700 */
 }
 
 @theme inline {
@@ -23,22 +23,20 @@ body {
 
 body {
   background:
-    radial-gradient(1200px 800px at 50% -10%, rgba(52, 211, 153, 0.12), transparent 60%),
-    radial-gradient(900px 700px at 80% 110%, rgba(5, 150, 105, 0.1), transparent 60%),
+    radial-gradient(1100px 700px at 50% -10%, rgba(5, 150, 105, 0.1), transparent 60%),
+    radial-gradient(900px 700px at 85% 110%, rgba(5, 150, 105, 0.08), transparent 60%),
     var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Prevent scrollbars on the kiosk / display view */
 .kiosk {
   overflow: hidden;
 }
 
 @keyframes pulseGlow {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
-  50% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(52, 211, 153, 0); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.45); }
+  50% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(5, 150, 105, 0); }
 }
 .pulse-glow {
   animation: pulseGlow 2.2s ease-in-out infinite;
