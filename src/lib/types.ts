@@ -35,6 +35,7 @@ export interface GameStateRow {
   driver_device_id: string | null;
   player_name: string | null;
   player_phone: string | null;
+  player_slmc: string | null;
   photo_url: string | null;
   puzzle_config: PuzzleConfig | null;
   pieces_placed: PiecePos[];
@@ -48,6 +49,7 @@ export interface LeaderboardRow {
   id: number;
   name: string;
   phone: string;
+  slmc: string | null;
   time_ms: number;
   created_at: string;
 }

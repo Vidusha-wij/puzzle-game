@@ -88,6 +88,7 @@ export const driver = {
       driver_device_id: deviceId,
       player_name: null,
       player_phone: null,
+      player_slmc: null,
       photo_url: null,
       puzzle_config: null,
       pieces_placed: [],
@@ -98,8 +99,13 @@ export const driver = {
     });
   },
 
-  async setPlayer(name: string, phone: string) {
-    await patch({ player_name: name, player_phone: phone, status: "uploading" });
+  async setPlayer(name: string, phone: string, slmc: string) {
+    await patch({
+      player_name: name,
+      player_phone: phone,
+      player_slmc: slmc,
+      status: "uploading",
+    });
   },
 
   /** Called by the display once the puzzle image is uploaded. The timer does
@@ -139,6 +145,7 @@ export const driver = {
       driver_device_id: null,
       player_name: null,
       player_phone: null,
+      player_slmc: null,
       photo_url: null,
       puzzle_config: null,
       pieces_placed: [],

@@ -1,53 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { randomImage } from "@/lib/images";
+/* eslint-disable @next/next/no-img-element */
+import { PRESET_IMAGES } from "@/lib/images";
+
+// One image on screen per SLOT seconds; the whole loop is SLOT * count.
+const SLOT = 4.5;
+const TOTAL = SLOT * PRESET_IMAGES.length;
 
 /**
- * Attract / idle screen.
+ * Attract / idle screen. Crossfades through the preset images with a pure-CSS
+ * animation so the big screen keeps switching without relying on JS timers.
  *
- * - Big screen (no `onPlay`): shows ONLY a random preset image, full-bleed.
- * - Controller (`onPlay` set): same image dimmed, with the "Play now" button.
+ * - Big screen (no `onPlay`): images only.
+ * - Controller (`onPlay` set): images dimmed, with the "Play now" button.
  */
-export default function Attract({
-  onPlay,
-  imageUrl,
-}: {
-  onPlay?: () => void;
-  imageUrl?: string;
-}) {
-  // Pick the random image on the client only, so SSR and hydration agree.
-  const [img, setImg] = useState<string | null>(imageUrl ?? null);
-  const [imgOk, setImgOk] = useState(true);
+export default function Attract({ onPlay }: { onPlay?: () => void }) {
   const isController = !!onPlay;
-
-  useEffect(() => {
-    if (!imageUrl) setImg(randomImage());
-  }, [imageUrl]);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
-      {imgOk && img && (
-        // eslint-disable-next-line @next/next/no-img-element
+      {PRESET_IMAGES.map((src, i) => (
         <img
-          src={img}
+          key={src}
+          src={src}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
-          onError={() => setImgOk(false)}
+          style={{
+            animation: `slideFade ${TOTAL}s linear infinite`,
+            animationDelay: `${-SLOT * i}s`,
+          }}
         />
-      )}
-      {!imgOk && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center opacity-80">
-            <div className="mx-auto mb-6 grid h-28 w-28 place-items-center rounded-3xl bg-accent/15 text-6xl">
-              🧩
-            </div>
-            <p className="text-sm uppercase tracking-[0.35em] text-accent/80">
-              Celogen Jigsaw
-            </p>
-          </div>
-        </div>
-      )}
+      ))}
 
       {isController && (
         <>
@@ -58,7 +41,7 @@ export default function Attract({
               <p className="text-[clamp(0.7rem,1.6vmin,1.1rem)] uppercase tracking-[0.4em] text-accent">
                 Celogen
               </p>
-              <h1 className="mt-2 text-[clamp(1.8rem,6vmin,5rem)] font-black leading-[0.95] tracking-tight drop-shadow-lg">
+              <h1 className="mt-2 text-[clamp(1.8rem,6vmin,5rem)] font-black leading-[0.95] tracking-tight text-white drop-shadow-lg">
                 JIGSAW
                 <br />
                 CHALLENGE
@@ -72,7 +55,7 @@ export default function Attract({
               <button
                 type="button"
                 onClick={onPlay}
-                className="pulse-glow cursor-pointer rounded-full bg-accent px-[8vmin] py-[2.2vmin] text-[clamp(1rem,2.6vmin,1.8rem)] font-extrabold text-black transition hover:bg-emerald-300 active:scale-95"
+                className="pulse-glow cursor-pointer rounded-full bg-accent px-[8vmin] py-[2.2vmin] text-[clamp(1rem,2.6vmin,1.8rem)] font-extrabold text-white transition hover:brightness-110 active:scale-95"
               >
                 ▶ Play now
               </button>

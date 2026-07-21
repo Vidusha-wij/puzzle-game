@@ -25,6 +25,7 @@ export default function PlayPage() {
   // form state
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [slmc, setSlmc] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // live piece + timer plumbing
@@ -54,6 +55,7 @@ export default function PlayPage() {
   const onPlayNow = async () => {
     setName("");
     setPhone("");
+    setSlmc("");
     setResult(null);
     await driver.beginCapture(deviceId);
   };
@@ -66,8 +68,12 @@ export default function PlayPage() {
       setError("Enter a name and a valid phone number.");
       return;
     }
+    if (slmc.trim().length < 3) {
+      setError("Enter your SLMC number.");
+      return;
+    }
     setError(null);
-    await driver.setPlayer(name.trim(), phone.trim());
+    await driver.setPlayer(name.trim(), phone.trim(), slmc.trim());
   };
 
   // Timer starts the moment the player grabs their first piece.
@@ -83,11 +89,16 @@ export default function PlayPage() {
       const timeMs = elapsed();
       sendLive(pieces);
       await driver.finish(timeMs, pieces);
-      const r = await submitScore(state?.player_name ?? name, state?.player_phone ?? phone, timeMs);
+      const r = await submitScore(
+        state?.player_name ?? name,
+        state?.player_phone ?? phone,
+        state?.player_slmc ?? slmc,
+        timeMs
+      );
       setResult(r);
       setBoard(await fetchTop(6));
     },
-    [elapsed, sendLive, state?.player_name, state?.player_phone, name, phone]
+    [elapsed, sendLive, state?.player_name, state?.player_phone, state?.player_slmc, name, phone, slmc]
   );
 
   // reset the solved flag whenever a new round begins
@@ -154,6 +165,16 @@ export default function PlayPage() {
               onChange={(e) => setPhone(e.target.value)}
               inputMode="tel"
               placeholder="07X XXX XXXX"
+              className="mb-4 w-full rounded-xl bg-white px-4 py-3 text-lg text-slate-900 outline-none ring-1 ring-slate-300 focus:ring-2 focus:ring-accent"
+            />
+
+            <label className="mb-1 block text-sm font-semibold text-slate-600">
+              SLMC Number
+            </label>
+            <input
+              value={slmc}
+              onChange={(e) => setSlmc(e.target.value)}
+              placeholder="e.g. 12345"
               className="mb-6 w-full rounded-xl bg-white px-4 py-3 text-lg text-slate-900 outline-none ring-1 ring-slate-300 focus:ring-2 focus:ring-accent"
             />
 

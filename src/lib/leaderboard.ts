@@ -5,11 +5,12 @@ import { LeaderboardRow } from "./types";
 export async function submitScore(
   name: string,
   phone: string,
+  slmc: string,
   timeMs: number
 ): Promise<{ rank: number; id: number | null }> {
   const { data, error } = await supabase
     .from("leaderboard")
-    .insert({ name, phone, time_ms: timeMs })
+    .insert({ name, phone, slmc, time_ms: timeMs })
     .select("id")
     .single();
 
