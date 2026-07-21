@@ -32,6 +32,13 @@ export default function Home() {
         />
       </div>
 
+      <Link
+        href="/admin"
+        className="rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300"
+      >
+        📋 Registrations &amp; CSV export
+      </Link>
+
       <p className="max-w-md text-center text-xs text-slate-400">
         Puzzle images live in <code className="text-slate-600">public/game</code>.
       </p>

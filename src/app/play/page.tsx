@@ -6,7 +6,7 @@ import PuzzleBoard from "@/components/PuzzleBoard";
 import Leaderboard from "@/components/Leaderboard";
 import { driver, getDeviceId, useGameState, useLiveSender } from "@/lib/sync";
 import { formatTime, progress } from "@/lib/puzzle";
-import { fetchTop, submitScore } from "@/lib/leaderboard";
+import { fetchTop, submitScore, markRegistrationSolved } from "@/lib/leaderboard";
 import { LeaderboardRow, PiecePos } from "@/lib/types";
 
 const RESULT_SECONDS = 10;
@@ -89,6 +89,9 @@ export default function PlayPage() {
       const timeMs = elapsed();
       sendLive(pieces);
       await driver.finish(timeMs, pieces);
+      if (state?.registration_id) {
+        await markRegistrationSolved(state.registration_id, timeMs);
+      }
       const r = await submitScore(
         state?.player_name ?? name,
         state?.player_phone ?? phone,
@@ -98,7 +101,17 @@ export default function PlayPage() {
       setResult(r);
       setBoard(await fetchTop(6));
     },
-    [elapsed, sendLive, state?.player_name, state?.player_phone, state?.player_slmc, name, phone, slmc]
+    [
+      elapsed,
+      sendLive,
+      state?.player_name,
+      state?.player_phone,
+      state?.player_slmc,
+      state?.registration_id,
+      name,
+      phone,
+      slmc,
+    ]
   );
 
   // reset the solved flag whenever a new round begins

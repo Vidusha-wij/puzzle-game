@@ -1,21 +1,37 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
+import { useEffect, useState } from "react";
 import { PRESET_IMAGES } from "@/lib/images";
 
-// One image on screen per SLOT seconds; the whole loop is SLOT * count.
-const SLOT = 4.5;
-const TOTAL = SLOT * PRESET_IMAGES.length;
+const INTERVAL_MS = 45000; // switch every 45 seconds
+const FADE_MS = 1500; // crossfade duration
 
 /**
- * Attract / idle screen. Crossfades through the preset images with a pure-CSS
- * animation so the big screen keeps switching without relying on JS timers.
+ * Attract / idle screen. Shows the preset images, switching to a *random*
+ * different one every 45s with a smooth crossfade.
  *
  * - Big screen (no `onPlay`): images only.
  * - Controller (`onPlay` set): images dimmed, with the "Play now" button.
  */
 export default function Attract({ onPlay }: { onPlay?: () => void }) {
+  // Start at 0 for SSR + first client render (no hydration mismatch), then
+  // randomise the start and rotate on the client.
+  const [idx, setIdx] = useState(0);
   const isController = !!onPlay;
+
+  useEffect(() => {
+    if (PRESET_IMAGES.length < 2) return;
+    setIdx(Math.floor(Math.random() * PRESET_IMAGES.length));
+    const id = setInterval(() => {
+      setIdx((cur) => {
+        let next = cur;
+        while (next === cur) next = Math.floor(Math.random() * PRESET_IMAGES.length);
+        return next;
+      });
+    }, INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
@@ -26,8 +42,8 @@ export default function Attract({ onPlay }: { onPlay?: () => void }) {
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
           style={{
-            animation: `slideFade ${TOTAL}s linear infinite`,
-            animationDelay: `${-SLOT * i}s`,
+            opacity: i === idx ? 1 : 0,
+            transition: `opacity ${FADE_MS}ms ease-in-out`,
           }}
         />
       ))}

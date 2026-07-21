@@ -1,5 +1,23 @@
 import { supabase } from "./supabase";
-import { LeaderboardRow } from "./types";
+import { LeaderboardRow, Registration } from "./types";
+
+/** Fill in the completion time on the player's registration row. */
+export async function markRegistrationSolved(regId: number, timeMs: number) {
+  const { error } = await supabase
+    .from("registrations")
+    .update({ time_ms: timeMs, solved_at: new Date().toISOString() })
+    .eq("id", regId);
+  if (error) console.error("registration update failed:", error.message);
+}
+
+/** All registrations (every player), newest first — used by the CSV export. */
+export async function fetchRegistrations(): Promise<Registration[]> {
+  const { data } = await supabase
+    .from("registrations")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return (data as Registration[]) ?? [];
+}
 
 /** Insert a score and return its 1-based rank (by fastest time). */
 export async function submitScore(

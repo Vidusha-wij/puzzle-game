@@ -95,15 +95,26 @@ export const driver = {
       started_at: null,
       solved_at: null,
       time_ms: null,
+      registration_id: null,
       version: Math.floor(Date.now() / 1000),
     });
   },
 
   async setPlayer(name: string, phone: string, slmc: string) {
+    // Capture the registration immediately, so the data is stored even if the
+    // player never finishes the puzzle.
+    const { data, error } = await supabase
+      .from("registrations")
+      .insert({ name, phone, slmc })
+      .select("id")
+      .single();
+    if (error) console.error("registration insert failed:", error.message);
+
     await patch({
       player_name: name,
       player_phone: phone,
       player_slmc: slmc,
+      registration_id: data?.id ?? null,
       status: "uploading",
     });
   },
@@ -152,6 +163,7 @@ export const driver = {
       started_at: null,
       solved_at: null,
       time_ms: null,
+      registration_id: null,
     });
   },
 };

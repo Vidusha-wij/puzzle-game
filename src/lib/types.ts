@@ -43,6 +43,18 @@ export interface GameStateRow {
   solved_at: string | null;
   time_ms: number | null;
   version: number;
+  registration_id: number | null;
+}
+
+/** Every player who submits the form — captured up front, whether or not they finish. */
+export interface Registration {
+  id: number;
+  name: string;
+  phone: string;
+  slmc: string | null;
+  time_ms: number | null;
+  created_at: string;
+  solved_at: string | null;
 }
 
 export interface LeaderboardRow {
