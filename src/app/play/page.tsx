@@ -1,35 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Attract from "@/components/Attract";
 import PuzzleBoard from "@/components/PuzzleBoard";
 import Leaderboard from "@/components/Leaderboard";
-import CameraCapture from "@/components/CameraCapture";
-import { supabase, PHOTO_BUCKET } from "@/lib/supabase";
 import { driver, getDeviceId, useGameState, useLiveSender } from "@/lib/sync";
 import { chooseGrid } from "@/lib/jigsaw";
 import { makeInitialPieces, formatTime, progress } from "@/lib/puzzle";
 import { fetchTop, submitScore } from "@/lib/leaderboard";
+import { randomImage, imageAspectFromUrl } from "@/lib/images";
 import { LeaderboardRow, PiecePos, PuzzleConfig } from "@/lib/types";
 
 const PIECE_COUNT = 12; // fixed medium difficulty
 const RESULT_SECONDS = 10;
-
-function imageAspect(file: File): Promise<number> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img.naturalWidth / Math.max(1, img.naturalHeight));
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(1);
-    };
-    img.src = url;
-  });
-}
 
 export default function PlayPage() {
   const { state, loaded } = useGameState();
@@ -42,12 +25,9 @@ export default function PlayPage() {
   const status = state?.status ?? "idle";
   const step = !loaded || !isDriver || status === "idle" ? "attract" : status;
 
-  // form + upload state
+  // form state
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [uploadMode, setUploadMode] = useState<"choose" | "camera">("choose");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // live piece + timer plumbing
@@ -81,6 +61,8 @@ export default function PlayPage() {
     await driver.beginCapture(deviceId);
   };
 
+  // On submit we capture details, then auto-pick a random preset image and
+  // start the puzzle — no manual upload.
   const onSubmitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim().length < 2 || phone.replace(/\D/g, "").length < 6) {
@@ -89,37 +71,20 @@ export default function PlayPage() {
     }
     setError(null);
     await driver.setPlayer(name.trim(), phone.trim());
-  };
 
-  const onPickImage = async (file: File) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const aspect = await imageAspect(file);
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from(PHOTO_BUCKET)
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (upErr) throw upErr;
-      const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
-
-      const { rows, cols } = chooseGrid(aspect, PIECE_COUNT);
-      const config: PuzzleConfig = {
-        rows,
-        cols,
-        aspect,
-        imageUrl: data.publicUrl,
-        seed: Math.floor(Math.random() * 1_000_000_000),
-      };
-      const initial = makeInitialPieces(config);
-      piecesRef.current = initial;
-      await driver.startPlay(config, initial);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
-    } finally {
-      setBusy(false);
-    }
+    const imageUrl = randomImage();
+    const aspect = await imageAspectFromUrl(imageUrl);
+    const { rows, cols } = chooseGrid(aspect, PIECE_COUNT);
+    const config: PuzzleConfig = {
+      rows,
+      cols,
+      aspect,
+      imageUrl,
+      seed: Math.floor(Math.random() * 1_000_000_000),
+    };
+    const initial = makeInitialPieces(config);
+    piecesRef.current = initial;
+    await driver.startPlay(config, initial);
   };
 
   const solvedRef = useRef(false);
@@ -141,11 +106,6 @@ export default function PlayPage() {
   useEffect(() => {
     if (status !== "solved") solvedRef.current = false;
   }, [status, state?.started_at]);
-
-  // Reset the picker whenever we (re)enter the upload step.
-  useEffect(() => {
-    if (status === "uploading") setUploadMode("choose");
-  }, [status]);
 
   // live clock while playing
   useEffect(() => {
@@ -223,56 +183,10 @@ export default function PlayPage() {
 
       {step === "uploading" && (
         <Centered>
-          <div className="float-up w-full max-w-md text-center">
-            <h2 className="mb-1 text-3xl font-black">Your picture</h2>
-            <p className="mb-6 text-white/60">
-              Hi {state?.player_name || "there"} — take a photo or upload one to turn into a puzzle.
-            </p>
-
-            {busy ? (
-              <div className="rounded-2xl bg-white/[0.03] px-6 py-12 ring-1 ring-white/10">
-                <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-accent" />
-                <p className="text-lg font-semibold">Preparing puzzle…</p>
-              </div>
-            ) : uploadMode === "camera" ? (
-              <CameraCapture
-                onCapture={onPickImage}
-                onCancel={() => setUploadMode("choose")}
-              />
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setUploadMode("camera")}
-                  className="flex flex-col items-center gap-2 rounded-2xl border-2 border-white/15 bg-white/[0.03] px-4 py-8 transition hover:border-accent/60 hover:bg-white/[0.06]"
-                >
-                  <span className="text-4xl">📷</span>
-                  <span className="text-base font-bold">Take a photo</span>
-                  <span className="text-xs text-white/40">Use the camera</span>
-                </button>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center gap-2 rounded-2xl border-2 border-white/15 bg-white/[0.03] px-4 py-8 transition hover:border-accent/60 hover:bg-white/[0.06]"
-                >
-                  <span className="text-4xl">🖼️</span>
-                  <span className="text-base font-bold">Upload a photo</span>
-                  <span className="text-xs text-white/40">JPG or PNG</span>
-                </button>
-              </div>
-            )}
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onPickImage(f);
-                e.target.value = "";
-              }}
-            />
-
-            {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+          <div className="float-up text-center">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-accent" />
+            <h2 className="text-3xl font-black">Get ready, {state?.player_name || "player"}!</h2>
+            <p className="mt-2 text-white/60">Shuffling your puzzle…</p>
           </div>
         </Centered>
       )}

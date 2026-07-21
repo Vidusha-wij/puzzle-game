@@ -157,7 +157,9 @@ export function chooseGrid(
     for (let cols = 2; cols <= 8; cols++) {
       const count = rows * cols;
       const cellAspect = aspect / cols / (1 / rows);
-      const err = Math.abs(count - target) * 0.6 + Math.abs(cellAspect - 1) * 10;
+      // Weight the piece-count target a bit more so we reliably land near
+      // `target` (medium) instead of collapsing to fewer, perfectly-square cells.
+      const err = Math.abs(count - target) * 0.6 + Math.abs(cellAspect - 1) * 6;
       if (err < best.err) best = { rows, cols, err };
     }
   }
