@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Attract from "@/components/Attract";
 import PuzzleBoard from "@/components/PuzzleBoard";
 import Leaderboard from "@/components/Leaderboard";
+import CameraCapture from "@/components/CameraCapture";
 import { supabase, PHOTO_BUCKET } from "@/lib/supabase";
 import { driver, getDeviceId, useGameState, useLiveSender } from "@/lib/sync";
 import { chooseGrid } from "@/lib/jigsaw";
@@ -11,12 +12,7 @@ import { makeInitialPieces, formatTime, progress } from "@/lib/puzzle";
 import { fetchTop, submitScore } from "@/lib/leaderboard";
 import { LeaderboardRow, PiecePos, PuzzleConfig } from "@/lib/types";
 
-const DIFFICULTIES = [
-  { key: "easy", label: "Easy", count: 6 },
-  { key: "medium", label: "Medium", count: 12 },
-  { key: "hard", label: "Hard", count: 20 },
-] as const;
-
+const PIECE_COUNT = 12; // fixed medium difficulty
 const RESULT_SECONDS = 10;
 
 function imageAspect(file: File): Promise<number> {
@@ -49,9 +45,8 @@ export default function PlayPage() {
   // form + upload state
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [difficulty, setDifficulty] = useState<(typeof DIFFICULTIES)[number]>(
-    DIFFICULTIES[1]
-  );
+  const [uploadMode, setUploadMode] = useState<"choose" | "camera">("choose");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,7 +104,7 @@ export default function PlayPage() {
       if (upErr) throw upErr;
       const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
 
-      const { rows, cols } = chooseGrid(aspect, difficulty.count);
+      const { rows, cols } = chooseGrid(aspect, PIECE_COUNT);
       const config: PuzzleConfig = {
         rows,
         cols,
@@ -146,6 +141,11 @@ export default function PlayPage() {
   useEffect(() => {
     if (status !== "solved") solvedRef.current = false;
   }, [status, state?.started_at]);
+
+  // Reset the picker whenever we (re)enter the upload step.
+  useEffect(() => {
+    if (status === "uploading") setUploadMode("choose");
+  }, [status]);
 
   // live clock while playing
   useEffect(() => {
@@ -224,45 +224,53 @@ export default function PlayPage() {
       {step === "uploading" && (
         <Centered>
           <div className="float-up w-full max-w-md text-center">
-            <h2 className="mb-1 text-3xl font-black">Choose your picture</h2>
+            <h2 className="mb-1 text-3xl font-black">Your picture</h2>
             <p className="mb-6 text-white/60">
-              Hi {state?.player_name || "there"} — pick a photo to turn into a puzzle.
+              Hi {state?.player_name || "there"} — take a photo or upload one to turn into a puzzle.
             </p>
 
-            <div className="mb-6 flex justify-center gap-2">
-              {DIFFICULTIES.map((d) => (
-                <button
-                  key={d.key}
-                  onClick={() => setDifficulty(d)}
-                  className={`rounded-xl px-4 py-2 text-sm font-bold ring-1 transition ${
-                    difficulty.key === d.key
-                      ? "bg-accent text-black ring-accent"
-                      : "bg-white/5 text-white/70 ring-white/15 hover:ring-white/30"
-                  }`}
-                >
-                  {d.label}
-                  <span className="ml-1 opacity-60">{d.count}</span>
-                </button>
-              ))}
-            </div>
-
-            <label className="block cursor-pointer rounded-2xl border-2 border-dashed border-white/20 bg-white/[0.03] px-6 py-12 transition hover:border-accent/60 hover:bg-white/[0.06]">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={busy}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onPickImage(f);
-                }}
+            {busy ? (
+              <div className="rounded-2xl bg-white/[0.03] px-6 py-12 ring-1 ring-white/10">
+                <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-accent" />
+                <p className="text-lg font-semibold">Preparing puzzle…</p>
+              </div>
+            ) : uploadMode === "camera" ? (
+              <CameraCapture
+                onCapture={onPickImage}
+                onCancel={() => setUploadMode("choose")}
               />
-              <div className="text-5xl">📷</div>
-              <p className="mt-3 text-lg font-semibold">
-                {busy ? "Preparing puzzle…" : "Tap to upload a photo"}
-              </p>
-              <p className="mt-1 text-sm text-white/40">JPG or PNG</p>
-            </label>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setUploadMode("camera")}
+                  className="flex flex-col items-center gap-2 rounded-2xl border-2 border-white/15 bg-white/[0.03] px-4 py-8 transition hover:border-accent/60 hover:bg-white/[0.06]"
+                >
+                  <span className="text-4xl">📷</span>
+                  <span className="text-base font-bold">Take a photo</span>
+                  <span className="text-xs text-white/40">Use the camera</span>
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center gap-2 rounded-2xl border-2 border-white/15 bg-white/[0.03] px-4 py-8 transition hover:border-accent/60 hover:bg-white/[0.06]"
+                >
+                  <span className="text-4xl">🖼️</span>
+                  <span className="text-base font-bold">Upload a photo</span>
+                  <span className="text-xs text-white/40">JPG or PNG</span>
+                </button>
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onPickImage(f);
+                e.target.value = "";
+              }}
+            />
 
             {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
           </div>
