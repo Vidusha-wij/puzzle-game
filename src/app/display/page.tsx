@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Attract from "@/components/Attract";
+import PrizeDisplay from "@/components/PrizeDisplay";
 import PuzzleBoard from "@/components/PuzzleBoard";
 import Leaderboard from "@/components/Leaderboard";
 import { driver, useGameState, useLiveReceiver } from "@/lib/sync";
@@ -82,8 +82,8 @@ export default function DisplayPage() {
 
   return (
     <main className="kiosk relative h-dvh w-full">
-      {/* Idle + capturing: keep showing the same random image, no chrome. */}
-      {(status === "idle" || status === "capturing") && <Attract />}
+      {/* Idle + capturing: the branded "Puzzle to Prize" screen with rotating products. */}
+      {(status === "idle" || status === "capturing") && <PrizeDisplay />}
 
       {status === "uploading" && (
         <div className="flex h-full w-full flex-col items-center justify-center p-[6vmin] text-center">
