@@ -1,43 +1,36 @@
 "use client";
 
-// Controller ("tab") attract screen: "PUZZLE TO PRIZE" with a Play button,
-// on a white background scattered with faint puzzle pieces.
+/* eslint-disable @next/next/no-img-element */
 
-import PuzzleScatter from "./PuzzleScatter";
-
-function Word({ children, className }: { children: string; className: string }) {
-  return (
-    <span className={`relative inline-block ${className}`}>
-      <span className="absolute inset-0 translate-y-[0.06em] text-emerald-800/60" aria-hidden>
-        {children}
-      </span>
-      <span className="relative bg-gradient-to-b from-emerald-400 to-emerald-700 bg-clip-text text-transparent">
-        {children}
-      </span>
-    </span>
-  );
-}
+// Controller ("tab") attract screen — same branded artwork as the main
+// display (green background, puzzle-piece pattern, "Puzzle to Prize" title)
+// plus the Play Now button that starts a round.
 
 export default function PrizeIntro({ onPlay }: { onPlay?: () => void }) {
   return (
-    <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-white">
-      {/* faint scattered puzzle pieces */}
-      <PuzzleScatter fill="#7ac47f" />
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#1c4524]">
+      <img
+        src="/display/background.svg"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <img
+        src="/display/pattern.svg"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+      />
 
-      {/* Title + button */}
-      <div className="relative z-10 flex flex-col items-center px-6 text-center">
-        <h1 className="font-black uppercase leading-[0.82] tracking-tight drop-shadow-[0_2px_1px_rgba(20,80,40,0.25)]">
-          <Word className="text-[clamp(2.4rem,11vw,6rem)]">Puzzle</Word>
-          <span className="block">
-            <Word className="text-[clamp(2rem,8vw,4.5rem)]">To</Word>
-          </span>
-          <Word className="text-[clamp(4rem,20vw,11rem)]">Prize</Word>
-        </h1>
+      <div className="relative z-10 flex flex-col items-center gap-[7vmin] px-[6vmin] text-center">
+        <img
+          src="/display/puzzle-to-prize.svg"
+          alt="Puzzle to Prize"
+          className="w-[78%] max-w-[90vmin] object-contain drop-shadow-[0_1vmin_2vmin_rgba(0,0,0,0.35)]"
+        />
 
         <button
           type="button"
           onClick={onPlay}
-          className="pulse-glow mt-[6vmin] cursor-pointer rounded-full bg-gradient-to-b from-emerald-500 to-emerald-700 px-[10vmin] py-[2.4vmin] text-[clamp(1rem,3vmin,1.8rem)] font-extrabold uppercase tracking-wider text-white shadow-[0_10px_24px_rgba(16,122,80,0.4)] ring-1 ring-emerald-800/20 transition hover:brightness-110 active:scale-95"
+          className="pulse-glow-light cursor-pointer rounded-full bg-white px-[11vmin] py-[3vmin] text-[clamp(1.1rem,3.6vmin,2.2rem)] font-black uppercase tracking-wider text-[#1c4524] shadow-[0_1vmin_3vmin_rgba(0,0,0,0.35)] transition hover:brightness-95 active:scale-95"
         >
           Play Now
         </button>
