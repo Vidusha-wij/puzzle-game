@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Attract from "@/components/Attract";
+import PrizeIntro from "@/components/PrizeIntro";
 import PuzzleBoard from "@/components/PuzzleBoard";
 import Leaderboard from "@/components/Leaderboard";
 import { driver, getDeviceId, useGameState, useLiveSender } from "@/lib/sync";
@@ -153,7 +153,7 @@ export default function PlayPage() {
 
   return (
     <main className="kiosk relative h-dvh w-full">
-      {step === "attract" && <Attract onPlay={onPlayNow} />}
+      {step === "attract" && <PrizeIntro onPlay={onPlayNow} />}
 
       {step === "capturing" && (
         <Centered>
