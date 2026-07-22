@@ -5,11 +5,14 @@ import PrizeIntro from "@/components/PrizeIntro";
 import PuzzleBoard from "@/components/PuzzleBoard";
 import Leaderboard from "@/components/Leaderboard";
 import { driver, getDeviceId, useGameState, useLiveSender } from "@/lib/sync";
-import { formatTime, progress } from "@/lib/puzzle";
+import { formatTime, progress, makeInitialPieces } from "@/lib/puzzle";
 import { fetchTop, submitScore, markRegistrationSolved } from "@/lib/leaderboard";
-import { LeaderboardRow, PiecePos } from "@/lib/types";
+import { imageAspectFromFile } from "@/lib/images";
+import { uploadPhoto } from "@/lib/upload";
+import { LeaderboardRow, PiecePos, PuzzleConfig } from "@/lib/types";
 
 const RESULT_SECONDS = 10;
+const GRID = 3; // strictly 3x3 = 9 pieces
 
 export default function PlayPage() {
   const { state, loaded } = useGameState();
@@ -27,6 +30,7 @@ export default function PlayPage() {
   const [phone, setPhone] = useState("");
   const [slmc, setSlmc] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
 
   // live piece + timer plumbing
   const piecesRef = useRef<PiecePos[]>([]);
@@ -60,8 +64,6 @@ export default function PlayPage() {
     await driver.beginCapture(deviceId);
   };
 
-  // Capture the player's details, then hand off to the display, which adds the
-  // puzzle image. The controller just waits until the puzzle is ready.
   const onSubmitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim().length < 2 || phone.replace(/\D/g, "").length < 6) {
@@ -74,6 +76,30 @@ export default function PlayPage() {
     }
     setError(null);
     await driver.setPlayer(name.trim(), phone.trim(), slmc.trim());
+  };
+
+  // Player picks their puzzle photo on the controller; the display just mirrors.
+  const onPickImage = async (file: File) => {
+    setUploadBusy(true);
+    setError(null);
+    try {
+      const aspect = await imageAspectFromFile(file);
+      const imageUrl = await uploadPhoto(file);
+      const config: PuzzleConfig = {
+        rows: GRID,
+        cols: GRID,
+        aspect,
+        imageUrl,
+        seed: Math.floor(Math.random() * 1_000_000_000),
+      };
+      const initial = makeInitialPieces(config);
+      piecesRef.current = initial;
+      await driver.startPlay(config, initial);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed. Try again.");
+    } finally {
+      setUploadBusy(false);
+    }
   };
 
   // Timer starts the moment the player grabs their first piece.
@@ -205,10 +231,36 @@ export default function PlayPage() {
 
       {step === "uploading" && (
         <Centered>
-          <div className="float-up text-center">
-            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-slate-300 border-t-accent" />
-            <h2 className="text-3xl font-black">You&apos;re in, {state?.player_name || "player"}!</h2>
-            <p className="mt-2 text-slate-500">Adding your picture — get ready to solve.</p>
+          <div className="float-up w-full max-w-md text-center">
+            <h2 className="mb-1 text-3xl font-black">Your picture</h2>
+            <p className="mb-6 text-slate-500">
+              Hi {state?.player_name || "there"} — pick a photo to turn into a puzzle.
+            </p>
+
+            {uploadBusy ? (
+              <div className="rounded-2xl bg-white/60 px-6 py-12 ring-1 ring-slate-200">
+                <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-accent" />
+                <p className="text-lg font-semibold">Preparing puzzle…</p>
+              </div>
+            ) : (
+              <label className="block cursor-pointer rounded-2xl border-2 border-dashed border-slate-300 bg-white/60 px-6 py-12 transition hover:border-accent/60 hover:bg-white">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) onPickImage(f);
+                    e.target.value = "";
+                  }}
+                />
+                <div className="text-5xl">📷</div>
+                <p className="mt-3 text-lg font-semibold">Tap to upload a photo</p>
+                <p className="mt-1 text-sm text-slate-400">JPG or PNG</p>
+              </label>
+            )}
+
+            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
           </div>
         </Centered>
       )}
