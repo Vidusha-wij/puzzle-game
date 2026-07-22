@@ -36,4 +36,4 @@ export const PRODUCTS: Product[] = [
   { key: "empabest", name: "Empabest", parts: [{ text: "EMPABEST", color: "#e2511f" }] },
 ];
 
-export const productSrc = (key: string) => `/products/${key}.png`;
+export const productSrc = (key: string) => `/products/${key}.svg`;

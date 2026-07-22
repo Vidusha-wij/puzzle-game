@@ -2,14 +2,15 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from "react";
-import PuzzleScatter from "./PuzzleScatter";
 import { PRODUCTS, Product, productSrc } from "@/lib/products";
 
 const ROTATE_MS = 60000; // new product every minute
 
 /**
- * Main-screen idle: green "PUZZLE TO PRIZE" with a white box that cycles a
- * random product wordmark every minute. Fully fluid (vmin units).
+ * Main-screen idle: the branded "Puzzle to Prize" artwork (real vector assets
+ * from design) with a white box that cycles a random product wordmark every
+ * minute. Background + pattern use object-cover so they fill any screen size
+ * or aspect ratio without distortion; the title and box scale with vmin units.
  */
 export default function PrizeDisplay() {
   const [idx, setIdx] = useState(0);
@@ -28,29 +29,29 @@ export default function PrizeDisplay() {
   }, []);
 
   return (
-    <div
-      className="relative h-full w-full overflow-hidden"
-      style={{
-        background:
-          "radial-gradient(125% 95% at 50% 72%, #57a95a 0%, #3d8544 45%, #285f33 100%)",
-      }}
-    >
-      <div className="pointer-events-none absolute inset-[2.2vmin] rounded-[3vmin] ring-2 ring-[#1f4c28]/40" />
-      <PuzzleScatter fill="#8ac98d" opacityScale={0.22} />
+    <div className="relative h-full w-full overflow-hidden bg-[#1c4524]">
+      <img
+        src="/display/background.svg"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <img
+        src="/display/pattern.svg"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+      />
 
       <div className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-[6vmin] px-[6vmin] text-center">
-        <h1 className="font-black uppercase leading-[0.8] tracking-tight">
-          <GreenWord className="text-[clamp(3rem,13vmin,11rem)]">Puzzle</GreenWord>
-          <span className="block">
-            <GreenWord className="text-[clamp(2.4rem,10vmin,9rem)]">To</GreenWord>
-          </span>
-          <GreenWord className="text-[clamp(4.5rem,22vmin,16rem)]">Prize</GreenWord>
-        </h1>
+        <img
+          src="/display/puzzle-to-prize.svg"
+          alt="Puzzle to Prize"
+          className="w-[82%] max-w-[100vmin] object-contain drop-shadow-[0_1vmin_2vmin_rgba(0,0,0,0.35)]"
+        />
 
         {/* white product box */}
         <div
           className="relative w-[76%] max-w-[86vmin] overflow-hidden rounded-[3vmin] bg-white shadow-[0_1.4vmin_4vmin_rgba(0,0,0,0.3)]"
-          style={{ aspectRatio: "10 / 3" }}
+          style={{ aspectRatio: "6.2 / 1" }}
         >
           {PRODUCTS.map((p, i) => (
             <ProductMark key={p.key} product={p} active={i === idx} />
@@ -102,18 +103,5 @@ function ProductMark({ product, active }: { product: Product; active: boolean })
         </span>
       )}
     </div>
-  );
-}
-
-function GreenWord({ children, className }: { children: string; className: string }) {
-  return (
-    <span className={`relative inline-block ${className}`}>
-      <span className="absolute inset-0 translate-y-[0.05em] text-[#1f5228]" aria-hidden>
-        {children}
-      </span>
-      <span className="relative bg-gradient-to-b from-[#b8ecb0] to-[#4fa257] bg-clip-text text-transparent">
-        {children}
-      </span>
-    </span>
   );
 }
