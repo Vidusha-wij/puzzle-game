@@ -41,7 +41,13 @@ export default function PrizeDisplay() {
         className="absolute inset-0 h-full w-full object-cover"
       />
 
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-[6vmin] px-[6vmin] text-center">
+      {/*
+        Content sits near the TOP of the screen on purpose: on the LED wall
+        this is above eye level, and the lower half must stay empty (it's
+        below where people are looking / where the play area sits in front
+        of the wall).
+      */}
+      <div className="relative z-10 flex h-full w-full flex-col items-center px-[6vmin] pt-[6vmin] text-center">
         <img
           src="/display/puzzle-to-prize.svg"
           alt="Puzzle to Prize"
@@ -50,7 +56,7 @@ export default function PrizeDisplay() {
 
         {/* white product box */}
         <div
-          className="relative w-[76%] max-w-[86vmin] overflow-hidden rounded-[3vmin] bg-white shadow-[0_1.4vmin_4vmin_rgba(0,0,0,0.3)]"
+          className="relative mt-[3vmin] w-[76%] max-w-[86vmin] overflow-hidden rounded-[3vmin] bg-white shadow-[0_1.4vmin_4vmin_rgba(0,0,0,0.3)]"
           style={{ aspectRatio: "6.2 / 1" }}
         >
           {PRODUCTS.map((p, i) => (
