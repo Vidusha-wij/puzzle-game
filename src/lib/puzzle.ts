@@ -44,6 +44,24 @@ export function makeInitialPieces(config: PuzzleConfig): PiecePos[] {
   });
 }
 
+/**
+ * The normalized extent (in board-rect units) that the board + scattered tray
+ * occupy, so the layout can be sized to always fit. Mirrors makeInitialPieces.
+ * The board itself spans [0,1]x[0,1]; the tray extends below and slightly past
+ * the right edge.
+ */
+export function scatterExtent(rows: number, cols: number): { xMax: number; yMax: number } {
+  const n = rows * cols;
+  const trayCols = cols + 1;
+  const trayRows = Math.ceil(n / trayCols);
+  const rowGap = Math.min(0.3, 0.62 / Math.max(1, trayRows - 1));
+  // rightmost piece: nominal left ~0.965 + one cell width; jitter included.
+  const xMax = Math.max(1, 0.965 + 1 / cols);
+  // lowest piece: top of last tray row + one cell height; jitter included.
+  const yMax = Math.max(1, 1.14 + (trayRows - 1) * rowGap + 0.02 + 1 / rows);
+  return { xMax, yMax };
+}
+
 /** Are all pieces locked into place? */
 export function isSolved(pieces: PiecePos[]): boolean {
   return pieces.length > 0 && pieces.every((p) => p.placed);

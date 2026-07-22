@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { JigsawEdges, piecePath, TAB_DEPTH } from "@/lib/jigsaw";
-import { home, isSolved } from "@/lib/puzzle";
+import { home, isSolved, scatterExtent } from "@/lib/puzzle";
 import { PiecePos, PuzzleConfig } from "@/lib/types";
 
 interface Size {
@@ -23,16 +23,32 @@ const SNAP_NORM = 0.05; // snap distance as a fraction of the board
 const MARGIN_CELLS = TAB_DEPTH * 1.12; // extra room around each cell for knobs
 
 function computeLayout(size: Size, aspect: number, cols: number, rows: number): BoardLayout {
-  const boardMaxW = size.w * 0.92;
-  const boardMaxH = size.h * 0.52;
-  let boardW = Math.min(boardMaxW, boardMaxH * aspect);
-  let boardH = boardW / aspect;
-  if (boardH > boardMaxH) {
-    boardH = boardMaxH;
-    boardW = boardH * aspect;
-  }
-  const originX = (size.w - boardW) / 2;
-  const originY = size.h * 0.05;
+  // The full content (board [0,1] + scattered tray below/right + piece tab
+  // margins) measured in board-rect units. We fit this whole box into the
+  // container so nothing is ever cut off, at any size or aspect ratio.
+  const { xMax, yMax } = scatterExtent(rows, cols);
+  const mx = MARGIN_CELLS / cols; // tab margin as a fraction of board width
+  const my = MARGIN_CELLS / rows; // tab margin as a fraction of board height
+  const contentWNorm = xMax + 2 * mx; // content width in board widths
+  const contentHNorm = yMax + 2 * my; // content height in board heights
+
+  // Pixel aspect of the content box (boardW cancels out).
+  const boxAspect = (contentWNorm / contentHNorm) * aspect;
+  const availW = size.w * 0.97;
+  const availH = size.h * 0.97;
+
+  const boxW = Math.min(availW, availH * boxAspect);
+  const boxH = boxW / boxAspect;
+
+  const boardW = boxW / contentWNorm;
+  const boardH = boardW / aspect;
+
+  const boxLeft = (size.w - boxW) / 2;
+  const boxTop = (size.h - boxH) / 2;
+  // Board's (0,0) sits one tab-margin in from the content box's top-left.
+  const originX = boxLeft + mx * boardW;
+  const originY = boxTop + my * boardH;
+
   return {
     originX,
     originY,
