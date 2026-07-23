@@ -12,13 +12,30 @@ function fmtDate(iso: string | null): string {
   return d.toLocaleString();
 }
 
+/** A registration plus its competition place (1 = fastest; null = did not finish). */
+type RankedRegistration = Registration & { place: number | null };
+
+/** Finishers first, ordered fastest → slowest; DNFs after, newest first. */
+function rankRows(rows: Registration[]): RankedRegistration[] {
+  const finishers = rows
+    .filter((r) => r.time_ms != null)
+    .sort((a, b) => (a.time_ms ?? 0) - (b.time_ms ?? 0));
+  const dnf = rows
+    .filter((r) => r.time_ms == null)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return [
+    ...finishers.map((r, i) => ({ ...r, place: i + 1 })),
+    ...dnf.map((r) => ({ ...r, place: null })),
+  ];
+}
+
 export default function AdminPage() {
-  const [rows, setRows] = useState<Registration[]>([]);
+  const [rows, setRows] = useState<RankedRegistration[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setRows(await fetchRegistrations());
+    setRows(rankRows(await fetchRegistrations()));
     setLoading(false);
   }, []);
 
@@ -28,6 +45,7 @@ export default function AdminPage() {
 
   const exportCsv = () => {
     const csv = toCsv(rows, [
+      { header: "Place", get: (r) => (r.place != null ? r.place : "DNF") },
       { header: "Name", get: (r) => r.name },
       { header: "Phone", get: (r) => r.phone },
       { header: "SLMC Number", get: (r) => r.slmc ?? "" },
@@ -74,6 +92,7 @@ export default function AdminPage() {
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
             <tr>
+              <th className="px-4 py-3">Place</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">SLMC</th>
@@ -84,6 +103,15 @@ export default function AdminPage() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-slate-100 last:border-0">
+                <td className="px-4 py-3 font-black">
+                  {r.place != null ? (
+                    <span className={r.place <= 3 ? "text-accent" : "text-slate-700"}>
+                      {["🥇", "🥈", "🥉"][r.place - 1] ?? `#${r.place}`}
+                    </span>
+                  ) : (
+                    <span className="font-normal text-slate-300">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 font-semibold">{r.name}</td>
                 <td className="px-4 py-3 font-mono text-slate-600">{r.phone}</td>
                 <td className="px-4 py-3 font-mono text-slate-600">{r.slmc ?? "—"}</td>
@@ -99,7 +127,7 @@ export default function AdminPage() {
             ))}
             {!loading && rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
                   No registrations yet.
                 </td>
               </tr>
