@@ -42,22 +42,27 @@ export default function PrizeDisplay() {
       />
 
       {/*
-        Content sits near the TOP of the screen on purpose: on the LED wall
-        this is above eye level, and the lower half must stay empty (it's
-        below where people are looking / where the play area sits in front
-        of the wall).
+        HARD CONSTRAINT: the title + product box must always stay inside the
+        TOP HALF of the screen (the LED wall's lower half is below eye level
+        and must stay empty). Everything here is sized against viewport
+        HEIGHT (vh) with strict caps, so no screen size or aspect ratio can
+        push the content past the halfway mark.
       */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center px-[6vmin] pt-[6vmin] text-center">
+      <div className="relative z-10 flex h-[50vh] w-full flex-col items-center justify-center gap-[4vh] px-[4vw] text-center">
         <img
           src="/display/puzzle-to-prize.svg"
           alt="Puzzle to Prize"
-          className="w-[82%] max-w-[100vmin] object-contain drop-shadow-[0_1vmin_2vmin_rgba(0,0,0,0.35)]"
+          className="max-h-[32vh] w-auto max-w-[84%] object-contain drop-shadow-[0_0.8vh_1.6vh_rgba(0,0,0,0.35)]"
         />
 
         {/* white product box */}
         <div
-          className="relative mt-[3vmin] w-[76%] max-w-[86vmin] overflow-hidden rounded-[3vmin] bg-white shadow-[0_1.4vmin_4vmin_rgba(0,0,0,0.3)]"
-          style={{ aspectRatio: "6.2 / 1" }}
+          className="relative overflow-hidden bg-white shadow-[0_1vh_3vh_rgba(0,0,0,0.3)]"
+          style={{
+            width: "min(76%, 52vh)",
+            aspectRatio: "6.2 / 1",
+            borderRadius: "2vh",
+          }}
         >
           {PRODUCTS.map((p, i) => (
             <ProductMark key={p.key} product={p} active={i === idx} />
@@ -87,7 +92,7 @@ function ProductMark({ product, active }: { product: Product; active: boolean })
 
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center p-[3.5vmin] transition-opacity duration-700 ease-in-out"
+      className="absolute inset-0 flex items-center justify-center p-[1.6vh] transition-opacity duration-700 ease-in-out"
       style={{ opacity: active ? 1 : 0 }}
     >
       {src ? (

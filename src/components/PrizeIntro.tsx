@@ -24,7 +24,7 @@ export default function PrizeIntro({ onPlay }: { onPlay?: () => void }) {
         <img
           src="/display/puzzle-to-prize.svg"
           alt="Puzzle to Prize"
-          className="w-[78%] max-w-[90vmin] object-contain drop-shadow-[0_1vmin_2vmin_rgba(0,0,0,0.35)]"
+          className="max-h-[38vh] w-auto max-w-[78%] object-contain drop-shadow-[0_1vmin_2vmin_rgba(0,0,0,0.35)]"
         />
 
         <button
