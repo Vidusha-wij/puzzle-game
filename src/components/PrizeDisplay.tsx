@@ -50,7 +50,7 @@ export default function PrizeDisplay() {
       */}
       <div className="relative z-10 flex h-[50vh] w-full flex-col items-center justify-center gap-[4vh] px-[4vw] text-center">
         <img
-          src="/display/puzzle-to-prize.svg"
+          src="/display/puzzle-to-prize-2.svg"
           alt="Puzzle to Prize"
           className="max-h-[32vh] w-auto max-w-[84%] object-contain drop-shadow-[0_0.8vh_1.6vh_rgba(0,0,0,0.35)]"
         />

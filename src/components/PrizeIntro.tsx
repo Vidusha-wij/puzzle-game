@@ -22,7 +22,7 @@ export default function PrizeIntro({ onPlay }: { onPlay?: () => void }) {
 
       <div className="relative z-10 flex flex-col items-center gap-[7vmin] px-[6vmin] text-center">
         <img
-          src="/display/puzzle-to-prize.svg"
+          src="/display/puzzle-to-prize-2.svg"
           alt="Puzzle to Prize"
           className="max-h-[38vh] w-auto max-w-[78%] object-contain drop-shadow-[0_1vmin_2vmin_rgba(0,0,0,0.35)]"
         />
